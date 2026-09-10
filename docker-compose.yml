@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  backend1:
+    build: ./backend
+    container_name: backend1
+    environment:
+      - INSTANCE_ID=backend1
+      - PORT=3000
+    ports:
+      # exposed on the host so Autocannon can hit it directly, bypassing nginx, to measure reverse-proxy overhead
+      - "3000:3000"
+    networks:
+      - api-net
+
+  backend2:
+    build: ./backend
+    container_name: backend2
+    environment:
+      - INSTANCE_ID=backend2
+      - PORT=3000
+    networks:
+      - api-net
+
+  backend3:
+    build: ./backend
+    container_name: backend3
+    environment:
+      - INSTANCE_ID=backend3
+      - PORT=3000
+    networks:
+      - api-net
+
+  nginx:
+    # OpenResty instead of stock nginx, this is what makes the active health checks possible
+    image: openresty/openresty:alpine
+    container_name: nginx-edge
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./nginx/conf.d:/usr/local/openresty/nginx/conf/conf.d:ro
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - api-net
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.3.0
+    container_name: nginx-exporter
+    command:
+      - -nginx.scrape-uri=http://nginx:80/stub_status
+    depends_on:
+      - nginx
+    networks:
+      - api-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    # the remote-write-receiver flag is what lets k6 push live latency
+    # data directly into Prometheus, see docs/live-latency-setup.md
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-remote-write-receiver'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - api-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - api-net
+
+networks:
+  api-net:
+    driver: bridge

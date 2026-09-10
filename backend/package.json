@@ -1,0 +1,12 @@
+{
+  "name": "ProxyPulse-backend",
+  "version": "1.0.0",
+  "description": "Backend for ProxyPulse, server.js file written in express to simulate backend API testing and monitoring",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
