@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend1:
     build: ./backend
@@ -12,6 +10,7 @@ services:
       - "3000:3000"
     networks:
       - api-net
+    restart: no
 
   backend2:
     build: ./backend
@@ -21,6 +20,7 @@ services:
       - PORT=3000
     networks:
       - api-net
+    restart: no
 
   backend3:
     build: ./backend
@@ -30,6 +30,7 @@ services:
       - PORT=3000
     networks:
       - api-net
+    restart: no
 
   nginx:
     # OpenResty instead of stock nginx, this is what makes the active health checks possible
@@ -46,6 +47,7 @@ services:
       - backend3
     networks:
       - api-net
+    restart: no
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:1.3.0
@@ -56,12 +58,12 @@ services:
       - nginx
     networks:
       - api-net
+    restart: no
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    # the remote-write-receiver flag is what lets k6 push live latency
-    # data directly into Prometheus, see docs/live-latency-setup.md
+    # the remote-write-receiver flag is what lets k6 push live latency data directly into Prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-remote-write-receiver'
@@ -71,6 +73,7 @@ services:
       - "9090:9090"
     networks:
       - api-net
+    restart: no
 
   grafana:
     image: grafana/grafana:latest
@@ -85,6 +88,7 @@ services:
       - prometheus
     networks:
       - api-net
+    restart: no
 
 networks:
   api-net:

@@ -32,3 +32,5 @@ app.get("/hot", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Instance ${INSTANCE_ID} listening on port ${PORT}`);
 });
+
+// To trigger the image build
